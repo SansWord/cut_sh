@@ -606,7 +606,7 @@
 
   <!-- Notable prompts -->
   <div class="section-label">Prompts that shaped the project</div>
-  <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Six questions that changed the outcome</h3>
+  <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Five questions that changed the outcome</h3>
   <p style="color: var(--text2); font-size: 15px; margin-bottom: 24px;">These weren't instructions — they were observations from reading the code critically.</p>
 
   <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 48px;">
@@ -617,10 +617,6 @@
     <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
       <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"I'm worried about the middle file — it's using <code style="background:none;border:none;padding:0;color:var(--accent)">$START</code> and <code style="background:none;border:none;padding:0;color:var(--accent)">$END</code> as its boundaries, which might have a keyframe issue."</div>
       <div style="font-size: 13px; color: var(--text2);">Caught that the middle copy was still cutting on non-keyframe boundaries. Led to using <code>kf_after_start</code> and <code>kf_before_end</code> as the true safe boundaries.</div>
-    </div>
-    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
-      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"Since we're looking for a keyframe before and after a timestamp, what do you think about extracting these as two separate methods?"</div>
-      <div style="font-size: 13px; color: var(--text2);">Refactoring instinct — simplified four repeated loops into <code>keyframe_before()</code> and <code>keyframe_after()</code>.</div>
     </div>
     <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
       <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"Can we honor the source file to decide the re-encoding settings?"</div>
@@ -704,7 +700,7 @@
   <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--accent);">
     <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 10px;">A moment worth calling out</div>
     <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Asking Claude to pick the most interesting prompts from the session</div>
-    <div style="font-size: 14px; color: var(--text2); line-height: 1.7;">Near the end of the session, after development and documentation were done, the prompt was: <em>"Can you pick some interesting prompts — maybe fewer than 5 — from the story?"</em> Claude went back through the entire conversation, identified the moments that genuinely changed the outcome, and presented them as choices to decide from. That kind of retrospective — remembering context across a long session and distilling it meaningfully — is something that's hard to do alone and surprisingly natural to do with Claude. It's also what produced the six prompts highlighted in this story.</div>
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.7;">Near the end of the session, after development and documentation were done, the prompt was: <em>"Can you pick some interesting prompts — maybe fewer than 5 — from the story?"</em> Claude went back through the entire conversation, identified the moments that genuinely changed the outcome, and presented them as choices to decide from. That kind of retrospective — remembering context across a long session and distilling it meaningfully — is something that's hard to do alone and surprisingly natural to do with Claude. It's also what produced the five prompts highlighted in this story.</div>
   </div>
 
   <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--amber);">
@@ -835,12 +831,17 @@
       <div class="file-name">cut_sh_docs.html</div>
       <div class="file-desc">Interactive HTML viewer with README, DEVLOG, and the full script with syntax highlighting.</div>
     </a>
-    <a href="skill/SKILL.md" class="file-card">
+    <a href="https://github.com/SansWord/cut_sh/blob/main/skill/SKILL.md" class="file-card">
       <div class="file-icon">🤖</div>
       <div class="file-name">skill/SKILL.md</div>
       <div class="file-desc">AI agent skill descriptor — so Claude can invoke cut.sh autonomously in future sessions.</div>
     </a>
-    <a href="skill/invoke_cut.sh" class="file-card">
+    <a href="https://github.com/SansWord/cut_sh/blob/main/skill/EXAMPLES.md" class="file-card">
+      <div class="file-icon">🤖</div>
+      <div class="file-name">skill/EXAMPLES.md</div>
+      <div class="file-desc">Examples provided to be used</div>
+    </a>
+    <a href="https://github.com/SansWord/cut_sh/blob/main/skill/invoke_cut.sh" class="file-card">
       <div class="file-icon">🔧</div>
       <div class="file-name">skill/invoke_cut.sh</div>
       <div class="file-desc">Agent wrapper with dependency checks, path resolution, and clean exit codes.</div>
