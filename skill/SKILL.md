@@ -1,6 +1,7 @@
 ---
 name: cut-sh
-description: Use this skill whenever the user wants to cut, trim, clip, or extract a segment from an MP4 video file using start and end timestamps. Triggers include: "cut this video", "trim from X to Y", "extract a clip", "clip this section", "I want the part from X to Y", or any request to extract a portion of a video file. This skill uses cut.sh — a keyframe-accurate bash script that avoids frame corruption at cut boundaries. Do NOT use for format conversion, merging multiple files, adding subtitles, or adjusting audio/video quality — those are outside this skill's scope.
+description: |
+  Use this skill whenever the user wants to cut, trim, clip, or extract a segment from an MP4 video file using start and end timestamps. Triggers include: "cut this video", "trim from X to Y", "extract a clip", "clip this section", "I want the part from X to Y", or any request to extract a portion of a video file. This skill uses cut.sh - a keyframe-accurate bash script that avoids frame corruption at cut boundaries. Do NOT use for format conversion, merging multiple files, adding subtitles, or adjusting audio/video quality - those are outside this skill's scope.
 ---
 
 # cut.sh Skill
