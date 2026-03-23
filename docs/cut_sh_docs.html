@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cut.sh — Documentation</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f6f8fa;
+    --bg3: #eef0f2;
+    --text: #1a1a1a;
+    --text2: #555;
+    --border: #d0d7de;
+    --accent: #0969da;
+    --accent2: #0550ae;
+    --green: #1a7f37;
+    --green-bg: #dafbe1;
+    --code-bg: #f6f8fa;
+    --code-border: #d0d7de;
+    --pre-bg: #161b22;
+    --pre-text: #e6edf3;
+    --tag-bg: #ddf4ff;
+    --tag-text: #0550ae;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #79c0ff;
+      --green: #3fb950;
+      --green-bg: #0f2d18;
+      --code-bg: #161b22;
+      --code-border: #30363d;
+      --pre-bg: #161b22;
+      --pre-text: #e6edf3;
+      --tag-bg: #0c2d6b;
+      --tag-text: #79c0ff;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+  }
+  /* ── Nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  nav a {
+    display: inline-block;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text2);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  nav .title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin-right: 24px;
+    padding: 14px 0;
+    font-family: ui-monospace, monospace;
+  }
+  /* ── Layout ── */
+  .page { display: none; }
+  .page.active { display: block; }
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+  }
+  /* ── Typography ── */
+  h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 20px; font-weight: 600; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; }
+  p { margin: 10px 0; color: var(--text); }
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  strong { font-weight: 600; }
+  /* ── Code ── */
+  code {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text);
+  }
+  pre {
+    background: var(--pre-bg);
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 14px 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+    color: var(--pre-text);
+    line-height: 1.6;
+  }
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--bg2);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--bg2); }
+  /* ── Callouts ── */
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: var(--bg2);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout.green { border-left-color: var(--green); background: var(--green-bg); }
+  /* ── Tags ── */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: ui-monospace, monospace;
+    margin: 2px;
+  }
+  /* ── Copy button ── */
+  .script-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+    font-family: inherit;
+  }
+  .copy-btn:hover { color: var(--text); background: var(--bg3); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+  /* ── Script viewer ── */
+  .script-wrap {
+    background: var(--pre-bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .script-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .script-filename {
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .script-body {
+    overflow-x: auto;
+    padding: 0;
+  }
+  .script-body pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 20px 24px;
+  }
+  .script-body pre code {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  /* syntax */
+  .kw  { color: #ff7b72; }
+  .fn  { color: #d2a8ff; }
+  .str { color: #a5d6ff; }
+  .cmt { color: #8b949e; font-style: italic; }
+  .var { color: #79c0ff; }
+  .num { color: #f2cc60; }
+  .sec { color: #56d364; font-weight: 600; }
+  .diagram {
+    background: var(--pre-bg);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--pre-text);
+    margin: 14px 0;
+    overflow-x: auto;
+    line-height: 1.8;
+    border: 1px solid var(--border);
+  }
+  /* ── Phase cards ── */
+  .phase {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    background: var(--bg2);
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .phase-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .phase-title { font-size: 15px; font-weight: 600; }
+  /* ── Metrics ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .metric {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .metric-value { font-size: 22px; font-weight: 600; color: var(--accent); font-family: ui-monospace, monospace; }
+  .metric-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  /* ── Terminal output ── */
+  .terminal {
+    background: #0d0d0d;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: #d4d4d4;
+    margin: 14px 0;
+    line-height: 1.7;
+    border: 1px solid #333;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .terminal .dim { color: #666; }
+  .terminal .green { color: #4ec9b0; }
+  .terminal .yellow { color: #dcdcaa; }
+  .terminal .blue { color: #9cdcfe; }
+  .terminal .separator { color: #444; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="title">cut.sh</span>
+  <a href="#" class="active" onclick="showPage('readme', this)">README</a>
+  <a href="#" onclick="showPage('devlog', this)">DEVLOG</a>
+  <a href="#" onclick="showPage('script', this)">cut.sh</a>
+</nav>
+
+<!-- ── README ── -->
+<div id="readme" class="page active">
+<div class="container">
+
+  <h1>cut.sh</h1>
+  <p>A bash script for keyframe-accurate MP4 cutting using <code>ffmpeg</code> and <code>ffprobe</code>. Cuts a clip from a source file between two timestamps with frame-accurate boundaries and no quality loss on the middle segment.</p>
+
+  <h2>Requirements</h2>
+  <p>
+    <span class="tag">ffmpeg</span>
+    <span class="tag">ffprobe</span>
+    <span class="tag">bc</span>
+    <span class="tag">bash 3.2+</span>
+  </p>
+
+  <h2>Usage</h2>
+  <pre><code>./cut.sh &lt;source&gt; &lt;start&gt; &lt;end&gt; [output] [--sequential]</code></pre>
+
+  <h3>Arguments</h3>
+  <table>
+    <tr><th>Argument</th><th>Description</th></tr>
+    <tr><td><code>source</code></td><td>Input MP4 file</td></tr>
+    <tr><td><code>start</code></td><td>Start timestamp (<code>h:mm:ss</code> or <code>hh:mm:ss</code>)</td></tr>
+    <tr><td><code>end</code></td><td>End timestamp (<code>h:mm:ss</code> or <code>hh:mm:ss</code>)</td></tr>
+    <tr><td><code>output</code></td><td>Output filename (optional)</td></tr>
+    <tr><td><code>--sequential</code></td><td>Disable parallel processing (optional)</td></tr>
+  </table>
+
+  <h3>Output path</h3>
+  <ul>
+    <li>Bare filename (e.g. <code>clip.mp4</code>) → saved to <code>./output/clip.mp4</code></li>
+    <li>Path with <code>/</code> (e.g. <code>./clips/clip.mp4</code>) → saved to that exact path</li>
+    <li>Omitted → saved to <code>./output/&lt;source_filename&gt;</code></li>
+  </ul>
+
+  <h2>Examples</h2>
+  <pre><code># Basic cut, output to ./output/
+./cut.sh input.mp4 0:13:38 1:06:50
+
+# Custom output filename
+./cut.sh input.mp4 0:13:38 1:06:50 clip.mp4
+
+# Custom output path
+./cut.sh input.mp4 0:13:38 1:06:50 ./clips/clip.mp4
+
+# Sequential mode (for benchmarking or low-resource environments)
+./cut.sh input.mp4 0:13:38 1:06:50 clip.mp4 --sequential</code></pre>
+
+  <h2>How it works</h2>
+  <p>A naive <code>-c copy</code> cut in ffmpeg can only cut on keyframe boundaries, which causes corrupted frames at the start and end of the clip. This script solves that with a <strong>3-segment strategy</strong>:</p>
+
+  <div class="diagram">START ──[re-encode]──&gt; kf_after_start
+                            │
+                  kf_after_start ──[copy]──&gt; kf_before_end
+                                                   │
+                                      kf_before_end ──[re-encode]──&gt; END</div>
+
+  <ol>
+    <li><strong>Head</strong> — re-encodes from <code>$START</code> to the next keyframe (<code>kf_after_start</code>) using the source codec</li>
+    <li><strong>Middle</strong> — stream-copies from <code>kf_after_start</code> to <code>kf_before_end</code> (fast, lossless)</li>
+    <li><strong>Tail</strong> — re-encodes from the last keyframe before <code>$END</code> (<code>kf_before_end</code>) to <code>$END</code> using the source codec</li>
+    <li><strong>Concat</strong> — joins all three segments into the final output</li>
+  </ol>
+  <p>Only a few seconds at each boundary are re-encoded. The bulk of the clip is always a fast stream copy.</p>
+
+  <h3>Keyframe scanning</h3>
+  <p><code>ffprobe</code> is used to scan keyframes only around the <code>$START</code> and <code>$END</code> windows (±60 seconds by default) rather than the entire file, keeping the scan fast even on long videos.</p>
+
+  <h3>Parallel mode (default)</h3>
+  <p>By default, all three segments are processed in parallel, reducing total time. Use <code>--sequential</code> to process them one at a time, which is useful for benchmarking or on low-resource machines.</p>
+
+  <h2>Output</h2>
+  <p>The script prints a summary after completion:</p>
+  <div class="terminal">
+<span class="separator">── Summary ───────────────────────────────────────────────</span>
+  <span class="blue">source</span>    : ./input.mp4
+  <span class="blue">start</span>     : 0:13:38
+  <span class="blue">end</span>       : 1:06:50
+  <span class="blue">output</span>    : ./output/clip.mp4
+  <span class="blue">mode</span>      : parallel
+  <span class="separator">── timing ──────────────────────────────────────────────</span>
+  <span class="yellow">scan</span>      : 1s
+  <span class="yellow">segments</span>  : 2s (head: 1s, mid: 2s, tail: 2s)
+  <span class="yellow">concat</span>    : 2s
+  <span class="yellow">elapsed</span>   : 00:00:05
+  <span class="separator">────────────────────────────────────────────────────────</span>
+  <span class="green">expected</span>  : 3192s
+  <span class="green">actual</span>    : 3192s
+  <span class="green">diff</span>      : 0s
+  <span class="green">done</span>      : ./output/clip.mp4
+<span class="separator">──────────────────────────────────────────────────────────</span>
+  </div>
+
+  <h3>Duration verification</h3>
+  <p>The script automatically verifies the output duration against the expected duration (<code>end - start</code>) and shows the difference. A <code>diff</code> of <code>0s</code> confirms the cut is correct.</p>
+
+  <h2>Notes</h2>
+  <ul>
+    <li>The script automatically detects the source codec (<code>h264</code>, <code>hevc</code>, etc.) and audio codec (<code>aac</code>, <code>opus</code>, etc.) and uses them for re-encoding, so no manual codec configuration is needed.</li>
+    <li>Temp files are written to <code>/tmp/</code> and cleaned up automatically on exit, even if the script fails.</li>
+    <li>The <code>--sequential</code> flag can be placed anywhere in the argument list.</li>
+  </ul>
+
+</div>
+</div>
+
+<!-- ── DEVLOG ── -->
+<div id="devlog" class="page">
+<div class="container">
+
+  <h1>Collaboration Summary: Building cut.sh</h1>
+  <p>A collaborative session between a user and Claude (Anthropic) to build <code>cut.sh</code> — a keyframe-accurate MP4 cutting script using <code>ffmpeg</code> and <code>ffprobe</code>.</p>
+  <p>The session started from a simple ffmpeg question and evolved iteratively into a fully-featured, production-ready bash script through debugging, optimization, and refinement.</p>
+
+  <div class="callout">
+    <strong>Estimated duration:</strong> 2-3 hours of back-and-forth conversation.
+  </div>
+
+  <h2>Journey</h2>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">1</div><div class="phase-title">ffmpeg fundamentals</div></div>
+    <p>The session began with understanding a basic ffmpeg cut command:</p>
+    <pre><code>ffmpeg -ss 0:13:38 -i ./input -to 0:13:39 -c copy ./output.mp4</code></pre>
+    <ul>
+      <li><code>-ss</code> before <code>-i</code> is a fast seek but makes <code>-to</code> an absolute timestamp, causing the wrong duration</li>
+      <li><code>-ss</code> after <code>-i</code> is slower but accurate — fix was to move <code>-ss</code> after <code>-i</code></li>
+      <li><code>-c copy</code> can only cut on keyframe boundaries, introducing corrupted frames</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">2</div><div class="phase-title">bash foundations</div></div>
+    <p>Built reusable bash utilities:</p>
+    <ul>
+      <li>A 4-argument script template with usage display</li>
+      <li><code>hhmmss_to_seconds</code> — converts <code>hh:mm:ss</code> to total seconds using <code>IFS</code> splitting and <code>10#</code> base-10 forcing to handle leading zeros (<code>08</code>, <code>09</code>)</li>
+      <li>Discussed <code>$1</code> vs <code>read</code> input, and how bash functions "return" values via <code>echo</code> + command substitution <code>$()</code></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">3</div><div class="phase-title">keyframe scanning</div></div>
+    <p>Used <code>ffprobe</code> to scan keyframes:</p>
+    <pre><code>ffprobe -v error -of default=noprint_wrappers=1:nokey=1 \
+  -select_streams v -skip_frame nokey \
+  -show_frames -show_entries frame=pkt_dts_time $SOURCE</code></pre>
+    <p>Built <code>keyframe_before</code> and <code>keyframe_after</code> functions. Fixed a float precision bug where <code>4010.072733</code> was being truncated to <code>4010</code> and incorrectly passing an integer <code>&lt;=</code> check — fixed by using <code>awk</code> for float comparison instead of bash integer arithmetic.</p>
+    <p>Optimized <code>ffprobe</code> to scan only around <code>$START</code> and <code>$END</code> windows using <code>-read_intervals</code>, avoiding full-file scans on long videos.</p>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">4</div><div class="phase-title">3-segment cut strategy</div></div>
+    <p>Replaced the naive single <code>-c copy</code> cut with a 3-segment approach:</p>
+    <div class="diagram">START ──[re-encode]──&gt; kf_after_start
+                            │
+                  kf_after_start ──[copy]──&gt; kf_before_end
+                                                   │
+                                      kf_before_end ──[re-encode]──&gt; END</div>
+    <ul>
+      <li><strong>Head</strong>: re-encode <code>START → kf_after_start</code></li>
+      <li><strong>Middle</strong>: stream copy <code>kf_after_start → kf_before_end</code></li>
+      <li><strong>Tail</strong>: re-encode <code>kf_before_end → END</code></li>
+      <li><strong>Concat</strong>: join all three with <code>-f concat</code></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">5</div><div class="phase-title">debugging</div></div>
+    <p>Several bugs were caught and fixed through systematic debugging:</p>
+    <table>
+      <tr><th>Bug</th><th>Symptom</th><th>Fix</th></tr>
+      <tr><td>Missing <code>$kf_after_start</code> in Step 2</td><td>Middle segment cut from wrong position</td><td>Added missing argument after <code>-ss</code></td></tr>
+      <tr><td>Timebase mismatch</td><td>Final output 4780s instead of 3192s</td><td>Added <code>-video_track_timescale "$TIMESCALE"</code> to all steps</td></tr>
+      <tr><td>Timestamp discontinuity</td><td>Concat misaligned segments</td><td>Added <code>-reset_timestamps 1</code> to all steps and concat</td></tr>
+      <tr><td>Float truncation</td><td><code>kf_before_end</code> returning wrong keyframe</td><td>Switched integer <code>&lt;=</code> to <code>awk</code> float comparison</td></tr>
+      <tr><td><code>N/A</code> keyframe values</td><td><code>bc</code> division by zero error</td><td>Added <code>[[ "$ts" == "N/A" ]] &amp;&amp; continue</code> filter</td></tr>
+      <tr><td>Combined <code>ffprobe</code> awk parsing</td><td>Empty <code>VIDEO_CODEC</code>, <code>AUDIO_CODEC</code>, <code>TIMESCALE</code></td><td>Reverted to three separate <code>ffprobe</code> calls</td></tr>
+    </table>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">6</div><div class="phase-title">performance optimization</div></div>
+    <p><strong>1. Parallel processing</strong> — ran all three segments concurrently with <code>&amp;</code> and <code>wait</code>:</p>
+    <ul><li>Sequential: ~67s → Parallel: ~61s (modest improvement)</li></ul>
+    <p><strong>2. Pre-input <code>-ss</code> for head and tail</strong> — the real breakthrough:</p>
+    <ul>
+      <li>Before: tail was decoding the entire file up to 66 minutes before encoding</li>
+      <li>After: fast seek jumps directly to the position</li>
+      <li>Sequential: 67s → <strong>4s</strong> (~17x speedup)</li>
+      <li>Parallel: 61s → <strong>3s</strong> (~20x speedup)</li>
+    </ul>
+    <p>The middle segment kept post-input <code>-ss</code> since it uses <code>-c copy</code> and needs keyframe-accurate seeking.</p>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">7</div><div class="phase-title">polish and features</div></div>
+    <ul>
+      <li><code>validate_timestamp</code> — regex check for <code>h:mm:ss</code> or <code>hh:mm:ss</code> format</li>
+      <li>Source file existence check</li>
+      <li>End must be after start check</li>
+      <li><code>--sequential</code> flag — strips flag from args before positional parsing</li>
+      <li>Source codec auto-detection — <code>VIDEO_CODEC</code>, <code>AUDIO_CODEC</code>, <code>TIMESCALE</code> extracted from source</li>
+      <li>Per-segment timing — <code>ELAPSED_HEAD</code>, <code>ELAPSED_MID</code>, <code>ELAPSED_TAIL</code></li>
+      <li>Output duration verification — compares expected vs actual duration with diff</li>
+      <li>Full summary output</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header"><div class="phase-num">8</div><div class="phase-title">documentation and skill packaging</div></div>
+    <p>The session concluded with generating a full documentation and skill package.</p>
+    <p><strong>Documentation files:</strong></p>
+    <ul>
+      <li><code>README.md</code> — user-facing reference covering usage, arguments, output path rules, the 3-segment strategy, and the summary format</li>
+      <li><code>DEVLOG.md</code> — full collaboration log covering all phases, bugs, optimizations, and key learnings</li>
+      <li><code>cut_sh_docs.html</code> — self-contained HTML combining README and DEVLOG into a tabbed interface with syntax highlighting, dark mode, and a copy button</li>
+    </ul>
+    <p><strong>AI agent skill folder (<code>cut-sh-skill/</code>):</strong></p>
+    <ul>
+      <li><code>SKILL.md</code> — primary skill descriptor read by AI agents. Includes frontmatter trigger description, full argument reference, expected output format, error handling table, and performance notes</li>
+      <li><code>EXAMPLES.md</code> — maps natural language user requests to exact <code>cut.sh</code> arguments, including edge cases like relative durations and multiple cuts</li>
+      <li><code>invoke_cut.sh</code> — wrapper for AI agents that handles dependency checks, locates <code>cut.sh</code> automatically, validates arguments, and provides clean exit codes</li>
+    </ul>
+    <div class="callout">To deploy the skill, place <code>cut-sh-skill/</code> at <code>/mnt/skills/user/cut-sh/</code> alongside <code>cut.sh</code>. The agent will automatically load <code>SKILL.md</code> when a user asks to cut or trim a video.</div>
+  </div>
+
+  <hr>
+
+  <h2>Final Summary</h2>
+
+  <h3>What was built</h3>
+  <p>A production-ready bash script (<code>cut.sh</code>) and a complete AI agent skill package:</p>
+  <ol>
+    <li>Validates all inputs — source file, timestamp format, end after start</li>
+    <li>Extracts codec info from the source file automatically</li>
+    <li>Scans keyframes only around the cut points (not the full file)</li>
+    <li>Cuts accurately using a 3-segment head/mid/tail strategy</li>
+    <li>Re-encodes only the small boundaries, stream-copies the bulk</li>
+    <li>Processes segments in parallel by default</li>
+    <li>Verifies the output duration matches expected</li>
+    <li>Prints a detailed summary with per-step timing</li>
+    <li>Packaged as a reusable AI agent skill with <code>SKILL.md</code>, <code>EXAMPLES.md</code>, and <code>invoke_cut.sh</code></li>
+  </ol>
+
+  <h3>Key metrics (on a ~2hr source file, ~53 min clip)</h3>
+  <div class="metrics">
+    <div class="metric"><div class="metric-value">~1s</div><div class="metric-label">Naive -c copy<br>(wrong duration)</div></div>
+    <div class="metric"><div class="metric-value">~67s</div><div class="metric-label">Post-input -ss<br>sequential</div></div>
+    <div class="metric"><div class="metric-value">~61s</div><div class="metric-label">Post-input -ss<br>parallel</div></div>
+    <div class="metric"><div class="metric-value">~4s</div><div class="metric-label">Pre-input -ss<br>sequential</div></div>
+    <div class="metric"><div class="metric-value">~3s</div><div class="metric-label">Pre-input -ss<br>parallel</div></div>
+  </div>
+
+  <h3>What we learned</h3>
+  <div class="callout"><strong><code>-ss</code> position matters a lot</strong> — pre-input is fast but changes <code>-to</code> semantics; post-input is accurate but slow for long seeks</div>
+  <div class="callout"><strong>Timebase consistency is critical for concat</strong> — mismatched <code>time_base</code> between segments causes duration corruption</div>
+  <div class="callout"><strong>Float precision in bash</strong> — always use <code>awk</code> for float comparisons, never truncate to integers</div>
+  <div class="callout"><strong>The real bottleneck wasn't encoding</strong> — it was ffmpeg decoding the entire file up to the seek point</div>
+  <div class="callout"><strong>Parallel processing helps less than expected</strong> when the dominant cost is a single fast operation (stream copy)</div>
+
+  <hr>
+
+  <h2>Tools used</h2>
+  <table>
+    <tr><th>Tool</th><th>Purpose</th></tr>
+    <tr><td><code>ffmpeg</code></td><td>Video cutting, encoding, concat</td></tr>
+    <tr><td><code>ffprobe</code></td><td>Keyframe scanning, codec detection, duration verification</td></tr>
+    <tr><td><code>bc</code></td><td>Float arithmetic for durations</td></tr>
+    <tr><td><code>awk</code></td><td>Float comparisons, field parsing</td></tr>
+    <tr><td><code>bash</code></td><td>Script orchestration, argument handling, timing</td></tr>
+  </table>
+
+</div>
+</div>
+
+<!-- ── SCRIPT ── -->
+<div id="script" class="page">
+<div class="container">
+  <h1>cut.sh</h1>
+  <p>The full script as built through this collaboration session.</p>
+
+  <div class="script-wrap">
+    <div class="script-toolbar">
+      <span class="script-filename">cut.sh</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyScript()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+        Copy
+      </button>
+    </div>
+    <div class="script-body">
+<pre><code id="scriptCode"><span class="cmt">#!/usr/bin/env bash</span>
+
+<span class="cmt"># ── Usage ─────────────────────────────────────────────────────</span>
+<span class="fn">usage</span>() {
+  <span class="kw">echo</span> <span class="str">"Usage: $(basename "$0") &lt;source&gt; &lt;start&gt; &lt;end&gt; [output] [--sequential]"</span>
+  <span class="kw">echo</span>
+  <span class="kw">echo</span> <span class="str">"  source   Input MP4 file"</span>
+  <span class="kw">echo</span> <span class="str">"  start    Start timestamp (h:mm:ss or hh:mm:ss)"</span>
+  <span class="kw">echo</span> <span class="str">"  end      End timestamp (h:mm:ss or hh:mm:ss)"</span>
+  <span class="kw">echo</span> <span class="str">"  output   Output filename (default: ./output/&lt;source_filename&gt;)"</span>
+  <span class="kw">echo</span> <span class="str">"           Provide a bare name to land in ./output/"</span>
+  <span class="kw">echo</span> <span class="str">"           Provide a path (with /) to override location"</span>
+  <span class="kw">echo</span>
+  <span class="kw">echo</span> <span class="str">"Example:"</span>
+  <span class="kw">echo</span> <span class="str">'  $(basename "$0") input.mp4 0:13:38 1:06:50'</span>
+  <span class="kw">echo</span> <span class="str">'  $(basename "$0") input.mp4 0:13:38 1:06:50 clip.mp4'</span>
+  <span class="kw">echo</span> <span class="str">'  $(basename "$0") input.mp4 0:13:38 1:06:50 ./clips/clip.mp4'</span>
+  <span class="kw">echo</span> <span class="str">'  $(basename "$0") input.mp4 0:13:38 1:06:50 clip.mp4 --sequential'</span>
+  <span class="kw">exit</span> <span class="num">1</span>
+}
+
+<span class="var">PARALLEL</span>=<span class="kw">true</span>
+<span class="var">ARGS</span>=()
+<span class="kw">for</span> arg <span class="kw">in</span> <span class="str">"$@"</span>; <span class="kw">do</span>
+  [[ <span class="str">"$arg"</span> == <span class="str">"--sequential"</span> ]] &amp;&amp; <span class="var">PARALLEL</span>=<span class="kw">false</span> || <span class="var">ARGS</span>+=(<span class="str">"$arg"</span>)
+<span class="kw">done</span>
+
+[[ <span class="var">${#ARGS[@]}</span> -lt <span class="num">3</span> || <span class="var">${#ARGS[@]}</span> -gt <span class="num">4</span> ]] &amp;&amp; { <span class="kw">echo</span> <span class="str">"Error: expected 3 or 4 arguments, got ${#ARGS[@]}."</span> &gt;&amp;2; usage; }
+
+<span class="var">SOURCE</span>=<span class="str">"${ARGS[0]}"</span>
+<span class="var">START</span>=<span class="str">"${ARGS[1]}"</span>
+<span class="var">END</span>=<span class="str">"${ARGS[2]}"</span>
+<span class="var">OUTPUT_ARG</span>=<span class="str">"${ARGS[3]}"</span>
+
+<span class="cmt"># ── Convert hh:mm:ss to seconds ───────────────────────────────</span>
+<span class="fn">hhmmss_to_seconds</span>() {
+  <span class="kw">local</span> hh mm ss
+  <span class="kw">IFS</span>=<span class="str">':'</span> <span class="kw">read</span> -r hh mm ss &lt;&lt;&lt; <span class="str">"$1"</span>
+  <span class="kw">echo</span> $(( (<span class="num">10</span>#<span class="var">$hh</span> * <span class="num">3600</span>) + (<span class="num">10</span>#<span class="var">$mm</span> * <span class="num">60</span>) + <span class="num">10</span>#<span class="var">$ss</span> ))
+}
+
+<span class="cmt"># ── Validate timestamp format ─────────────────────────────────</span>
+<span class="fn">validate_timestamp</span>() {
+  [[ <span class="str">"$1"</span> =~ ^[0-9]{1,2}:[0-9]{2}:[0-9]{2}$ ]] || \
+    { <span class="kw">echo</span> <span class="str">"Error: invalid timestamp format '$1', expected hh:mm:ss"</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+}
+<span class="fn">validate_timestamp</span> <span class="str">"$START"</span>
+<span class="fn">validate_timestamp</span> <span class="str">"$END"</span>
+
+<span class="cmt"># ── Input validation ──────────────────────────────────────────</span>
+[[ ! -f <span class="str">"$SOURCE"</span> ]] &amp;&amp; { <span class="kw">echo</span> <span class="str">"Error: source file not found: $SOURCE"</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+
+<span class="var">start_sec</span>=$(<span class="fn">hhmmss_to_seconds</span> <span class="str">"$START"</span>)
+<span class="var">end_sec</span>=$(<span class="fn">hhmmss_to_seconds</span> <span class="str">"$END"</span>)
+
+[[ <span class="str">"$end_sec"</span> -le <span class="str">"$start_sec"</span> ]] &amp;&amp; { <span class="kw">echo</span> <span class="str">"Error: end must be after start."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+
+<span class="cmt"># ── Default output path ───────────────────────────────────────</span>
+<span class="kw">mkdir</span> -p ./output
+<span class="kw">if</span> [[ -n <span class="str">"$OUTPUT_ARG"</span> ]]; <span class="kw">then</span>
+  <span class="kw">if</span> [[ <span class="str">"$OUTPUT_ARG"</span> == */* ]]; <span class="kw">then</span>
+    <span class="var">OUTPUT</span>=<span class="str">"$OUTPUT_ARG"</span>
+  <span class="kw">else</span>
+    <span class="var">OUTPUT</span>=<span class="str">"./output/$OUTPUT_ARG"</span>
+  <span class="kw">fi</span>
+<span class="kw">else</span>
+  <span class="var">OUTPUT</span>=<span class="str">"./output/$(basename "$SOURCE")"</span>
+<span class="kw">fi</span>
+
+<span class="cmt"># ── Temp files ────────────────────────────────────────────────</span>
+<span class="var">TMP_HEAD</span>=<span class="str">"/tmp/cut_head.mp4"</span>
+<span class="var">TMP_MID</span>=<span class="str">"/tmp/cut_mid.mp4"</span>
+<span class="var">TMP_TAIL</span>=<span class="str">"/tmp/cut_tail.mp4"</span>
+<span class="var">TMP_LIST</span>=<span class="str">"/tmp/cut_list.txt"</span>
+
+<span class="fn">cleanup</span>() {
+  <span class="kw">rm</span> -f <span class="str">"$TMP_HEAD"</span> <span class="str">"$TMP_MID"</span> <span class="str">"$TMP_TAIL"</span> <span class="str">"$TMP_LIST"</span> \
+        /tmp/cut_time_head /tmp/cut_time_mid /tmp/cut_time_tail
+}
+<span class="kw">trap</span> cleanup EXIT
+
+<span class="cmt"># ── Find last keyframe at or before a given time ──────────────</span>
+<span class="fn">keyframe_before</span>() {
+  <span class="kw">local</span> <span class="var">target_sec</span>=<span class="str">"$1"</span>
+  <span class="kw">local</span> <span class="var">best</span>=<span class="str">""</span>
+  <span class="kw">for</span> ts <span class="kw">in</span> <span class="str">"${KEYFRAMES[@]}"</span>; <span class="kw">do</span>
+    <span class="kw">local</span> result
+    <span class="var">result</span>=$(<span class="kw">echo</span> <span class="str">"$ts $target_sec"</span> | <span class="fn">awk</span> <span class="str">'{print ($1 &lt;= $2) ? "yes" : "no"}'</span>)
+    [[ <span class="str">"$result"</span> == <span class="str">"yes"</span> ]] &amp;&amp; <span class="var">best</span>=<span class="str">"$ts"</span> || <span class="kw">break</span>
+  <span class="kw">done</span>
+  <span class="kw">echo</span> <span class="str">"$best"</span>
+}
+
+<span class="cmt"># ── Find first keyframe at or after a given time ──────────────</span>
+<span class="fn">keyframe_after</span>() {
+  <span class="kw">local</span> <span class="var">target_sec</span>=<span class="str">"$1"</span>
+  <span class="kw">for</span> ts <span class="kw">in</span> <span class="str">"${KEYFRAMES[@]}"</span>; <span class="kw">do</span>
+    <span class="kw">local</span> result
+    <span class="var">result</span>=$(<span class="kw">echo</span> <span class="str">"$ts $target_sec"</span> | <span class="fn">awk</span> <span class="str">'{print ($1 &gt;= $2) ? "yes" : "no"}'</span>)
+    <span class="kw">if</span> [[ <span class="str">"$result"</span> == <span class="str">"yes"</span> ]]; <span class="kw">then</span>
+      <span class="kw">echo</span> <span class="str">"$ts"</span>
+      <span class="kw">return</span>
+    <span class="kw">fi</span>
+  <span class="kw">done</span>
+}
+
+<span class="cmt"># ── Main ──────────────────────────────────────────────────────</span>
+
+<span class="cmt"># ── Extract encoding params from source ──────────────────────</span>
+<span class="var">VIDEO_CODEC</span>=$(ffprobe -v error -select_streams v:0 \
+  -show_entries stream=codec_name \
+  -of default=noprint_wrappers=1:nokey=1 \
+  <span class="str">"$SOURCE"</span>)
+
+<span class="var">AUDIO_CODEC</span>=$(ffprobe -v error -select_streams a:0 \
+  -show_entries stream=codec_name \
+  -of default=noprint_wrappers=1:nokey=1 \
+  <span class="str">"$SOURCE"</span>)
+
+<span class="var">TIMESCALE</span>=$(ffprobe -v error -select_streams v:0 \
+  -show_entries stream=time_base \
+  -of default=noprint_wrappers=1:nokey=1 \
+  <span class="str">"$SOURCE"</span> | <span class="fn">awk</span> <span class="str">-F'/' '{print $2}'</span>)
+
+<span class="kw">if</span> [[ -z <span class="str">"$VIDEO_CODEC"</span> || -z <span class="str">"$AUDIO_CODEC"</span> || -z <span class="str">"$TIMESCALE"</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"Error: could not extract codec info from $SOURCE."</span> &gt;&amp;2
+  <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span>
+
+<span class="kw">echo</span> <span class="str">"Source info:"</span>
+<span class="kw">echo</span> <span class="str">"  video codec : $VIDEO_CODEC"</span>
+<span class="kw">echo</span> <span class="str">"  audio codec : $AUDIO_CODEC"</span>
+<span class="kw">echo</span> <span class="str">"  timescale   : $TIMESCALE"</span>
+
+<span class="cmt"># ── Timer start ───────────────────────────────────────────────</span>
+<span class="var">TIME_START</span>=$(date +%s)
+<span class="var">TIME_SCAN_START</span>=<span class="var">$TIME_START</span>
+<span class="kw">echo</span> <span class="str">"Scanning keyframes in $SOURCE..."</span>
+
+<span class="var">INTERVAL</span>=<span class="num">60</span>
+<span class="var">start_window</span>=$(( <span class="var">start_sec</span> - <span class="var">INTERVAL</span> ))
+[[ <span class="str">"$start_window"</span> -lt <span class="num">0</span> ]] &amp;&amp; <span class="var">start_window</span>=<span class="num">0</span>
+
+<span class="var">KEYFRAMES</span>=()
+<span class="kw">while</span> <span class="kw">IFS</span>= <span class="kw">read</span> -r ts; <span class="kw">do</span>
+  [[ <span class="str">"$ts"</span> == <span class="str">"N/A"</span> ]] &amp;&amp; <span class="kw">continue</span>
+  <span class="var">KEYFRAMES</span>+=(<span class="str">"$ts"</span>)
+  <span class="var">frame_sec</span>=$(<span class="kw">echo</span> <span class="str">"$ts"</span> | <span class="fn">awk</span> <span class="str">'{printf "%d", $1}'</span>)
+  [[ <span class="str">"$frame_sec"</span> -gt <span class="str">"$(( end_sec + INTERVAL ))"</span> ]] &amp;&amp; <span class="kw">break</span>
+<span class="kw">done</span> &lt; &lt;(ffprobe -v error \
+  -read_intervals <span class="str">"${start_window}%$(( start_sec + INTERVAL )),$(( end_sec - INTERVAL ))%$(( end_sec + INTERVAL ))"</span> \
+  -of default=noprint_wrappers=1:nokey=1 \
+  -select_streams v \
+  -skip_frame nokey \
+  -show_frames \
+  -show_entries frame=pkt_dts_time \
+  <span class="str">"$SOURCE"</span>)
+
+<span class="kw">if</span> [[ <span class="var">${#KEYFRAMES[@]}</span> -eq <span class="num">0</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"Error: no keyframes found in $SOURCE."</span> &gt;&amp;2
+  <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span>
+
+<span class="var">kf_after_start</span>=$(<span class="fn">keyframe_after</span> <span class="str">"$start_sec"</span> | <span class="kw">tr</span> -d <span class="str">'[:space:]'</span>)
+<span class="var">kf_before_end</span>=$(<span class="fn">keyframe_before</span> <span class="str">"$end_sec"</span> | <span class="kw">tr</span> -d <span class="str">'[:space:]'</span>)
+
+<span class="kw">if</span> [[ -z <span class="str">"$kf_after_start"</span> || -z <span class="str">"$kf_before_end"</span> ]]; <span class="kw">then</span>
+  <span class="kw">echo</span> <span class="str">"Error: could not find keyframes around the given range."</span> &gt;&amp;2
+  <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span>
+<span class="var">TIME_SCAN_END</span>=$(date +%s)
+
+<span class="cmt"># ── Steps 1-3: Process all segments ───────────────────────────</span>
+<span class="var">head_duration</span>=$(<span class="kw">echo</span> <span class="str">"$kf_after_start - $start_sec"</span> | <span class="fn">bc</span>)
+<span class="var">mid_duration</span>=$(<span class="kw">echo</span> <span class="str">"$kf_before_end - $kf_after_start"</span> | <span class="fn">bc</span>)
+<span class="var">tail_duration</span>=$(<span class="kw">echo</span> <span class="str">"$end_sec - $kf_before_end"</span> | <span class="fn">bc</span>)
+
+<span class="var">TIME_SEGMENTS_START</span>=$(date +%s)
+<span class="kw">echo</span> <span class="str">"Processing segments in $([ "$PARALLEL" == true ] &amp;&amp; echo "parallel" || echo "sequential") mode..."</span>
+
+<span class="kw">if</span> [[ <span class="str">"$PARALLEL"</span> == <span class="kw">true</span> ]]; <span class="kw">then</span>
+  <span class="var">TIME_HEAD_START</span>=$(date +%s)
+  ffmpeg -v error -ss <span class="str">"$START"</span> -i <span class="str">"$SOURCE"</span> -t <span class="str">"$head_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c:v <span class="str">"$VIDEO_CODEC"</span> -c:a <span class="str">"$AUDIO_CODEC"</span> -y <span class="str">"$TMP_HEAD"</span> &amp;&amp; \
+    <span class="kw">echo</span> <span class="str">"$(( $(date +%s) - TIME_HEAD_START ))"</span> &gt; /tmp/cut_time_head &amp;
+  <span class="var">PID_HEAD</span>=$!
+
+  <span class="var">TIME_MID_START</span>=$(date +%s)
+  ffmpeg -v error -i <span class="str">"$SOURCE"</span> -ss <span class="str">"$kf_after_start"</span> -t <span class="str">"$mid_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c copy -y <span class="str">"$TMP_MID"</span> &amp;&amp; \
+    <span class="kw">echo</span> <span class="str">"$(( $(date +%s) - TIME_MID_START ))"</span> &gt; /tmp/cut_time_mid &amp;
+  <span class="var">PID_MID</span>=$!
+
+  <span class="var">TIME_TAIL_START</span>=$(date +%s)
+  ffmpeg -v error -ss <span class="str">"$kf_before_end"</span> -i <span class="str">"$SOURCE"</span> -t <span class="str">"$tail_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c:v <span class="str">"$VIDEO_CODEC"</span> -c:a <span class="str">"$AUDIO_CODEC"</span> -y <span class="str">"$TMP_TAIL"</span> &amp;&amp; \
+    <span class="kw">echo</span> <span class="str">"$(( $(date +%s) - TIME_TAIL_START ))"</span> &gt; /tmp/cut_time_tail &amp;
+  <span class="var">PID_TAIL</span>=$!
+
+  <span class="kw">wait</span> <span class="var">$PID_HEAD</span> || { <span class="kw">echo</span> <span class="str">"Error: head segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+  <span class="kw">wait</span> <span class="var">$PID_MID</span>  || { <span class="kw">echo</span> <span class="str">"Error: mid segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+  <span class="kw">wait</span> <span class="var">$PID_TAIL</span> || { <span class="kw">echo</span> <span class="str">"Error: tail segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+
+  <span class="var">ELAPSED_HEAD</span>=$(<span class="kw">cat</span> /tmp/cut_time_head <span class="num">2</span>&gt;/dev/null || <span class="kw">echo</span> <span class="str">"N/A"</span>)
+  <span class="var">ELAPSED_MID</span>=$(<span class="kw">cat</span> /tmp/cut_time_mid <span class="num">2</span>&gt;/dev/null || <span class="kw">echo</span> <span class="str">"N/A"</span>)
+  <span class="var">ELAPSED_TAIL</span>=$(<span class="kw">cat</span> /tmp/cut_time_tail <span class="num">2</span>&gt;/dev/null || <span class="kw">echo</span> <span class="str">"N/A"</span>)
+<span class="kw">else</span>
+  <span class="var">TIME_HEAD_START</span>=$(date +%s)
+  ffmpeg -v error -ss <span class="str">"$START"</span> -i <span class="str">"$SOURCE"</span> -t <span class="str">"$head_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c:v <span class="str">"$VIDEO_CODEC"</span> -c:a <span class="str">"$AUDIO_CODEC"</span> -y <span class="str">"$TMP_HEAD"</span> \
+    || { <span class="kw">echo</span> <span class="str">"Error: head segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+  <span class="var">ELAPSED_HEAD</span>=$(( $(date +%s) - <span class="var">TIME_HEAD_START</span> ))
+
+  <span class="var">TIME_MID_START</span>=$(date +%s)
+  ffmpeg -v error -i <span class="str">"$SOURCE"</span> -ss <span class="str">"$kf_after_start"</span> -t <span class="str">"$mid_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c copy -y <span class="str">"$TMP_MID"</span> \
+    || { <span class="kw">echo</span> <span class="str">"Error: mid segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+  <span class="var">ELAPSED_MID</span>=$(( $(date +%s) - <span class="var">TIME_MID_START</span> ))
+
+  <span class="var">TIME_TAIL_START</span>=$(date +%s)
+  ffmpeg -v error -ss <span class="str">"$kf_before_end"</span> -i <span class="str">"$SOURCE"</span> -t <span class="str">"$tail_duration"</span> \
+    -reset_timestamps <span class="num">1</span> -video_track_timescale <span class="str">"$TIMESCALE"</span> \
+    -c:v <span class="str">"$VIDEO_CODEC"</span> -c:a <span class="str">"$AUDIO_CODEC"</span> -y <span class="str">"$TMP_TAIL"</span> \
+    || { <span class="kw">echo</span> <span class="str">"Error: tail segment failed."</span> &gt;&amp;2; <span class="kw">exit</span> <span class="num">1</span>; }
+  <span class="var">ELAPSED_TAIL</span>=$(( $(date +%s) - <span class="var">TIME_TAIL_START</span> ))
+<span class="kw">fi</span>
+<span class="kw">echo</span> <span class="str">"All segments done."</span>
+<span class="var">TIME_SEGMENTS_END</span>=$(date +%s)
+
+<span class="cmt"># ── Step 4: Concat all three ───────────────────────────────────</span>
+<span class="var">TIME_CONCAT_START</span>=$(date +%s)
+<span class="kw">echo</span> <span class="str">"Concatenating segments..."</span>
+<span class="kw">printf</span> <span class="str">"file '%s'\nfile '%s'\nfile '%s'\n"</span> \
+  <span class="str">"$TMP_HEAD"</span> <span class="str">"$TMP_MID"</span> <span class="str">"$TMP_TAIL"</span> &gt; <span class="str">"$TMP_LIST"</span>
+
+ffmpeg -v error -f concat -safe <span class="num">0</span> -i <span class="str">"$TMP_LIST"</span> \
+  -c copy \
+  -reset_timestamps <span class="num">1</span> \
+  -y <span class="str">"$OUTPUT"</span>
+<span class="var">TIME_CONCAT_END</span>=$(date +%s)
+
+<span class="cmt"># ── Verify output duration ────────────────────────────────────</span>
+<span class="var">EXPECTED_DURATION</span>=$(( <span class="var">end_sec</span> - <span class="var">start_sec</span> ))
+<span class="var">ACTUAL_DURATION</span>=$(ffprobe -v error \
+  -show_entries format=duration \
+  -of default=noprint_wrappers=1:nokey=1 \
+  <span class="str">"$OUTPUT"</span> | <span class="fn">awk</span> <span class="str">'{printf "%d", $1}'</span>)
+<span class="var">DURATION_DIFF</span>=$(( <span class="var">ACTUAL_DURATION</span> - <span class="var">EXPECTED_DURATION</span> ))
+[[ <span class="var">$DURATION_DIFF</span> -lt <span class="num">0</span> ]] &amp;&amp; <span class="var">DURATION_DIFF</span>=$(( -<span class="var">DURATION_DIFF</span> ))
+
+<span class="var">TIME_END</span>=$(date +%s)
+<span class="var">ELAPSED</span>=$(( <span class="var">TIME_END</span> - <span class="var">TIME_START</span> ))
+<span class="var">ELAPSED_FMT</span>=$(<span class="kw">printf</span> <span class="str">"%02d:%02d:%02d"</span> $(( <span class="var">ELAPSED</span> / <span class="num">3600</span> )) $(( (<span class="var">ELAPSED</span> % <span class="num">3600</span>) / <span class="num">60</span> )) $(( <span class="var">ELAPSED</span> % <span class="num">60</span> )))
+<span class="var">ELAPSED_SCAN</span>=$(( <span class="var">TIME_SCAN_END</span> - <span class="var">TIME_SCAN_START</span> ))
+<span class="var">ELAPSED_SEGMENTS</span>=$(( <span class="var">TIME_SEGMENTS_END</span> - <span class="var">TIME_SEGMENTS_START</span> ))
+<span class="var">ELAPSED_CONCAT</span>=$(( <span class="var">TIME_CONCAT_END</span> - <span class="var">TIME_CONCAT_START</span> ))
+
+<span class="kw">echo</span>
+<span class="kw">echo</span> <span class="str">"── Summary ───────────────────────────────────────────────"</span>
+<span class="kw">echo</span> <span class="str">"  source  : $SOURCE"</span>
+<span class="kw">echo</span> <span class="str">"  start   : $START"</span>
+<span class="kw">echo</span> <span class="str">"  end     : $END"</span>
+<span class="kw">echo</span> <span class="str">"  output  : $OUTPUT"</span>
+<span class="kw">echo</span> <span class="str">'  mode    : $([ "$PARALLEL" == true ] &amp;&amp; echo "parallel" || echo "sequential")'</span>
+<span class="kw">echo</span> <span class="str">"  ── timing ──────────────────────────────────────────────"</span>
+<span class="kw">echo</span> <span class="str">"  scan      : ${ELAPSED_SCAN}s"</span>
+<span class="kw">echo</span> <span class="str">"  segments  : ${ELAPSED_SEGMENTS}s (head: ${ELAPSED_HEAD}s, mid: ${ELAPSED_MID}s, tail: ${ELAPSED_TAIL}s)"</span>
+<span class="kw">echo</span> <span class="str">"  concat    : ${ELAPSED_CONCAT}s"</span>
+<span class="kw">echo</span> <span class="str">"  elapsed   : $ELAPSED_FMT"</span>
+<span class="kw">echo</span> <span class="str">"  ────────────────────────────────────────────────────────"</span>
+<span class="kw">echo</span> <span class="str">"  expected  : ${EXPECTED_DURATION}s"</span>
+<span class="kw">echo</span> <span class="str">"  actual    : ${ACTUAL_DURATION}s"</span>
+<span class="kw">echo</span> <span class="str">"  diff      : ${DURATION_DIFF}s"</span>
+<span class="kw">echo</span> <span class="str">"  done      : $OUTPUT"</span>
+<span class="kw">echo</span> <span class="str">"──────────────────────────────────────────────────────────"</span></code></pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  return false;
+}
+
+function copyScript() {
+  const code = document.getElementById('scriptCode').innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg> Copy';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>

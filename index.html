@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building cut.sh with Claude — A script, a skill, and a story</title>
+<meta name="description" content="An experienced developer's first session coding with Claude. One conversation produced a production script, an AI agent skill package, and an honest account of what AI pair programming actually feels like.">
+<meta property="og:title" content="Building cut.sh with Claude — A script, a skill, and a story">
+<meta property="og:description" content="One conversation. A production script, an AI agent skill, and a 20× performance breakthrough. Plus an honest account of where Claude got it wrong.">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #1f6feb;
+    --green: #3fb950;
+    --green-bg: #0f2d18;
+    --amber: #d29922;
+    --amber-bg: #272115;
+    --purple: #bc8cff;
+    --purple-bg: #1e1139;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text);
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .nav-brand {
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a {
+    font-size: 14px;
+    color: var(--text2);
+    transition: color .15s;
+  }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  .nav-cta {
+    background: var(--accent2);
+    color: #fff !important;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background .15s !important;
+  }
+  .nav-cta:hover { background: var(--accent) !important; text-decoration: none !important; }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 32px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(88,166,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(88,166,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(31,111,235,0.12) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 28px;
+  }
+  .hero-badge .dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+  .hero h1 {
+    font-size: clamp(32px, 6vw, 60px);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--text2);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 60px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    text-decoration: none !important;
+  }
+  .btn-primary {
+    background: var(--accent2);
+    color: #fff;
+    border: 1px solid transparent;
+  }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-secondary {
+    background: var(--bg2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Stats ── */
+  .hero-stats {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat { text-align: center; }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    color: var(--accent);
+    display: block;
+  }
+  .stat-label { font-size: 13px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Sections ── */
+  section { padding: 80px 32px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .section-sub {
+    font-size: 17px;
+    color: var(--text2);
+    max-width: 600px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+  }
+
+  /* ── Story timeline ── */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent2), var(--border));
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 40px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 8px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent2);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 3px rgba(31,111,235,0.2);
+  }
+  .timeline-item.highlight::before { background: var(--green); box-shadow: 0 0 0 3px rgba(63,185,80,0.2); }
+  .timeline-phase {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .timeline-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .timeline-desc { font-size: 15px; color: var(--text2); line-height: 1.65; }
+  .timeline-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(63,185,80,0.2);
+  }
+  .timeline-tag.amber {
+    background: var(--amber-bg);
+    color: var(--amber);
+    border-color: rgba(210,153,34,0.2);
+  }
+
+  /* ── Breakthrough card ── */
+  .breakthrough {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 48px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .breakthrough::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--green));
+  }
+  .breakthrough-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .breakthrough h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .breakthrough p { color: var(--text2); font-size: 15px; margin-bottom: 20px; }
+  .perf-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .perf-before { text-align: right; }
+  .perf-after  { text-align: left; }
+  .perf-val {
+    font-family: ui-monospace, monospace;
+    font-size: 28px;
+    font-weight: 700;
+    display: block;
+  }
+  .perf-val.bad  { color: #f85149; }
+  .perf-val.good { color: var(--green); }
+  .perf-lbl { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .perf-arrow {
+    font-size: 28px;
+    color: var(--text3);
+    font-weight: 300;
+  }
+
+  /* ── Output card ── */
+  .terminal {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 32px 0;
+  }
+  .terminal-bar {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot-red   { width:12px;height:12px;border-radius:50%;background:#ff5f57; }
+  .dot-amber { width:12px;height:12px;border-radius:50%;background:#febc2e; }
+  .dot-green { width:12px;height:12px;border-radius:50%;background:#28c840; }
+  .terminal-title { font-size:13px;color:var(--text3);margin-left:8px;font-family:ui-monospace,monospace; }
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre;
+    overflow-x: auto;
+    color: #c9d1d9;
+  }
+  .t-dim    { color: #484f58; }
+  .t-green  { color: #3fb950; }
+  .t-blue   { color: #79c0ff; }
+  .t-yellow { color: #e3b341; }
+  .t-sep    { color: #30363d; }
+
+  /* ── File list ── */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .file-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    transition: border-color .15s;
+    text-decoration: none !important;
+    display: block;
+    color: var(--text);
+  }
+  .file-card:hover { border-color: var(--accent); }
+  .file-icon { font-size: 24px; margin-bottom: 10px; }
+  .file-name {
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .file-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  /* ── Quote ── */
+  .quote-block {
+    border-left: 3px solid var(--accent2);
+    padding: 20px 24px;
+    background: var(--bg2);
+    border-radius: 0 10px 10px 0;
+    margin: 48px 0;
+  }
+  .quote-text {
+    font-size: 20px;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .quote-attr { font-size: 14px; color: var(--text3); }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 32px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 14px;
+  }
+  footer a { color: var(--text2); }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .nav-links { gap: 12px; }
+    section { padding: 60px 20px; }
+    .hero { padding: 100px 20px 60px; }
+    .perf-row { grid-template-columns: 1fr; text-align: center; }
+    .perf-before { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">cut.sh</span>
+  <div class="nav-links">
+    <a href="#story">Story</a>
+    <a href="#result">Result</a>
+    <a href="#reflection">Reflection</a>
+    <a href="#files">Files</a>
+    <a href="docs/cut_sh_docs.html" class="nav-cta">View Docs</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-badge">
+    <span class="dot"></span>
+    First time coding with Claude — honestly documented
+  </div>
+
+  <h1>A script. A skill. <span class="accent">A story.</span></h1>
+
+  <p class="hero-sub">
+    One Claude session. A production-ready MP4 cutter, an AI agent skill package,
+    and a first-hand account of what AI pair programming actually feels like
+    when you bring real engineering skepticism to it.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#story" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"/></svg>
+      Read the story
+    </a>
+    <a href="docs/cut_sh_docs.html" class="btn btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8Z"/></svg>
+      View docs
+    </a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">~2.5h</span>
+      <span class="stat-label">total session length</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">20×</span>
+      <span class="stat-label">performance gain</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">9</span>
+      <span class="stat-label">phases of iteration</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">6</span>
+      <span class="stat-label">bugs caught &amp; fixed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">↑</span>
+      <span class="stat-label">ffmpeg internals learned</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── Story ── -->
+<section id="story" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div class="container">
+  <div class="section-label">The story</div>
+  <h2 class="section-title">How a one-line ffmpeg command became a script, a skill, and a story</h2>
+  <p class="section-sub">I'm an experienced developer who'd used ffmpeg before but never dug into its internals. I was also skeptical of AI coding — worried it would produce plausible-looking code that doesn't hold up. One session later, I had three things I didn't expect: a production script, an AI agent skill package, and a clearer picture of what real AI collaboration actually looks like.</p>
+
+  <!-- TL;DR -->
+  <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px;">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); margin-bottom: 12px;">TL;DR</div>
+    <ul style="color: var(--text2); font-size: 14px; line-height: 2; padding-left: 20px;">
+      <li>Asked Claude to explain an ffmpeg command — discovered it was producing the wrong output duration</li>
+      <li>Learned that a naive <code>-c copy</code> cut silently corrupts frames at boundaries — the keyframe problem</li>
+      <li>Built a 3-segment head/mid/tail strategy — re-encode only the edges, stream-copy the bulk</li>
+      <li>Debugged 6 bugs including a silent timebase mismatch that inflated the output to 4780s instead of 3192s</li>
+      <li>Added per-segment timing — revealed the tail was taking 57s for 5s of content due to full-file decoding</li>
+      <li>Fixed it by moving <code>-ss</code> before <code>-i</code>: 67s → 3s (~20× speedup)</li>
+      <li>Packaged as an AI agent skill with <code>SKILL.md</code>, <code>EXAMPLES.md</code>, and <code>invoke_cut.sh</code></li>
+    </ul>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-phase">Phase 1</div>
+      <div class="timeline-title">It started with one ffmpeg command</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"Can you explain this command: ffmpeg -ss 0:13:38 -i ./input -to 0:13:39 -c copy ./output.mp4"</div>
+      <div class="timeline-desc">Asking Claude to explain the command surfaced the first bug immediately — <code>-ss</code> before <code>-i</code> makes <code>-to</code> an absolute timestamp, not a relative one. The output file was 13 minutes long instead of 1 second. That one question kicked off the whole session.</div>
+      <span class="timeline-tag amber">Bug #1 found immediately</span>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">Phase 2 — 3</div>
+      <div class="timeline-title">Building the bash foundation</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"Can you give me a bash script that takes 4 arguments, and shows usage if not enough are provided?"</div>
+      <div class="timeline-desc">From the script template, we built a timestamp converter, keyframe scanning functions, and argument validation. Every decision was explained — why <code>10#$hh</code> prevents octal errors, why float comparisons need <code>awk</code> not bash arithmetic, why functions return via <code>echo</code> and command substitution.</div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">Phase 4 — 5</div>
+      <div class="timeline-title">The 3-segment strategy — and six bugs</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"I worried about the middle file — it might have a keyframe issue at its boundaries"</div>
+      <div class="timeline-desc">A naive <code>-c copy</code> cut corrupts frames at boundaries, so we designed a head/mid/tail approach. Then came six bugs. The most significant: the output was 4780s instead of 3192s with no error. Keeping the temp files on disk (a debugging habit, not something Claude asked for) made <code>ffprobe</code> inspection possible — revealing the middle segment had a different timebase (<code>1/90000</code> vs <code>1/60000</code>). This led to codec and timescale auto-detection from the source — a suggestion that came from the human side.</div>
+      <span class="timeline-tag amber">6 bugs resolved</span>
+    </div>
+
+    <div class="timeline-item highlight">
+      <div class="timeline-phase">Phase 6 — The breakthrough</div>
+      <div class="timeline-title">67s → 3s — by refusing to accept the wrong answer</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"Can you have a breakdown for the time used in each step?"</div>
+      <div class="timeline-desc">Claude claimed the middle stream-copy would be the bottleneck. Pushed back — copy has no encoding work. Claude then pointed to concat. Also wrong. Rather than accept either, per-segment timing was added to find out empirically. The data showed the tail taking 57s for 5s of content. Root cause: post-input <code>-ss</code> was decoding the entire 66-minute file before every cut. Moving <code>-ss</code> before <code>-i</code> for head and tail dropped total time from 67s to 3s.</div>
+      <span class="timeline-tag">~20× speedup</span>
+      <span class="timeline-tag amber" style="margin-left:4px;">Claude's diagnosis was wrong twice</span>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">Phase 7 — 8</div>
+      <div class="timeline-title">Polish, verification, and docs</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"You debugged the output file length — can we add that into the script to verify the output should be expected?"</div>
+      <div class="timeline-desc">Validation, parallel processing, and a full summary output were added. A debug step was turned into a permanent quality gate — <code>EXPECTED_DURATION</code> vs <code>ACTUAL_DURATION</code> with a diff printed on every run. Then came full documentation: README, DEVLOG, an interactive HTML viewer.</div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">Phase 9</div>
+      <div class="timeline-title">The script becomes a skill — and a story</div>
+      <div style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); margin: 6px 0 8px; opacity: 0.8;">"Can you provide cut.sh as a skill for AI agents? What should we do, and what files should we generate?"</div>
+      <div class="timeline-desc">One question transformed a one-off script into a reusable AI agent tool with <code>SKILL.md</code>, <code>EXAMPLES.md</code>, and <code>invoke_cut.sh</code>. Then the session kept going into something less expected — reviewing the collaboration itself, finding the moments that mattered, and building this page.</div>
+    </div>
+  </div>
+
+  <!-- Collaboration -->
+  <div class="quote-block" style="margin-top: 48px;">
+    <div class="quote-text">"What surprised me most wasn't the code — it was how fast we iterated. Paste an error, get a fix, understand why, move on. The debugging loop felt genuinely different from working alone."</div>
+    <div class="quote-attr">— First session with Claude</div>
+  </div>
+
+  <div class="section-label" style="margin-top: 48px;">The collaboration</div>
+  <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">It wasn't just "AI wrote the code"</h3>
+  <p style="color: var(--text2); font-size: 15px; margin-bottom: 28px;">Claude brought ffmpeg internals, bash patterns, and debugging methodology. The human side brought engineering instinct — questioning assumptions, spotting redundancy, and expanding scope. Three decisions changed the outcome more than any others.</p>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 48px;">
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 20px; border-left: 3px solid var(--green);">
+      <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--green); margin-bottom: 8px;">Decision #1</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Rejected two wrong diagnoses — then demanded data</div>
+      <div style="font-size: 14px; color: var(--text2);">Claude claimed mid-copy would be slow. Rejected — copy has no encode work. Claude pointed to concat. Also rejected. Per-segment timing was added to measure empirically. The data found the real cause. Without this push the 67s → 3s breakthrough never happens.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 20px; border-left: 3px solid #1D9E75;">
+      <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #1D9E75; margin-bottom: 8px;">Decision #2</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Turned a debug step into a permanent quality gate</div>
+      <div style="font-size: 14px; color: var(--text2);">After the duration bug was fixed, the instinct was: this check shouldn't be manual. Baking <code>EXPECTED_DURATION</code> vs <code>ACTUAL_DURATION</code> into every run means future regressions get caught automatically — not discovered after the fact.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 20px; border-left: 3px solid var(--purple);">
+      <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--purple); margin-bottom: 8px;">Decision #3</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Asked "can this be an AI agent skill?"</div>
+      <div style="font-size: 14px; color: var(--text2);">One question at the end transformed a one-off script into a reusable tool a future Claude session can invoke autonomously — closing the loop from "built with AI" to "run by AI".</div>
+    </div>
+  </div>
+
+  <!-- Notable prompts -->
+  <div class="section-label">Prompts that shaped the project</div>
+  <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Six questions that changed the outcome</h3>
+  <p style="color: var(--text2); font-size: 15px; margin-bottom: 24px;">These weren't instructions — they were observations from reading the code critically.</p>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 48px;">
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"I noticed <code style="background:none;border:none;padding:0;color:var(--accent)">ffprobe</code> is being called twice. Is it possible to only call it once and reuse it?"</div>
+      <div style="font-size: 13px; color: var(--text2);">Led to loading all keyframes into a single array, scanning it twice in memory — eliminating a redundant I/O call.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"I'm worried about the middle file — it's using <code style="background:none;border:none;padding:0;color:var(--accent)">$START</code> and <code style="background:none;border:none;padding:0;color:var(--accent)">$END</code> as its boundaries, which might have a keyframe issue."</div>
+      <div style="font-size: 13px; color: var(--text2);">Caught that the middle copy was still cutting on non-keyframe boundaries. Led to using <code>kf_after_start</code> and <code>kf_before_end</code> as the true safe boundaries.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"Since we're looking for a keyframe before and after a timestamp, what do you think about extracting these as two separate methods?"</div>
+      <div style="font-size: 13px; color: var(--text2);">Refactoring instinct — simplified four repeated loops into <code>keyframe_before()</code> and <code>keyframe_after()</code>.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"Can we honor the source file to decide the re-encoding settings?"</div>
+      <div style="font-size: 13px; color: var(--text2);">Claude had hardcoded <code>libx264</code>/<code>aac</code> with no justification. This question — coming from principle — led to auto-detecting codec and timescale from the source, making the script portable across any MP4.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"You debugged the output file length — can we add that into the script to verify the output should be expected?"</div>
+      <div style="font-size: 13px; color: var(--text2);">Turned a one-off debug step into a permanent quality gate — <code>EXPECTED_DURATION</code> vs <code>ACTUAL_DURATION</code> with a diff printed on every run.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;">
+      <div style="font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px;">"Can you provide <code style="background:none;border:none;padding:0;color:var(--accent)">cut.sh</code> as a skill for AI agents? What should we do, and what files should we generate?"</div>
+      <div style="font-size: 13px; color: var(--text2);">The scope leap that turned a script into a reusable AI tool — <code>SKILL.md</code>, <code>EXAMPLES.md</code>, and <code>invoke_cut.sh</code> so Claude can invoke it autonomously.</div>
+    </div>
+  </div>
+
+  <!-- Where Claude got it wrong -->
+  <div class="section-label">Where Claude got it wrong</div>
+  <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">This wasn't a flawless AI demo</h3>
+  <p style="color: var(--text2); font-size: 15px; margin-bottom: 24px;">Claude made real mistakes. Each one was caught through review and testing — which is exactly how it should work.</p>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px;">
+    <div style="background: var(--bg3); border: 1px solid #3d1f1f; border-radius: 10px; padding: 16px 18px; border-left: 3px solid #f85149;">
+      <div style="font-size: 11px; font-weight: 600; color: #f85149; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .07em;">Wrong diagnosis × 2</div>
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Misidentified the bottleneck — twice</div>
+      <div style="font-size: 13px; color: var(--text2);">Claimed mid-copy then concat were slow. Both rejected on instinct. Only empirical data found the real cause.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid #3d1f1f; border-radius: 10px; padding: 16px 18px; border-left: 3px solid #f85149;">
+      <div style="font-size: 11px; font-weight: 600; color: #f85149; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .07em;">Regression</div>
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Reintroduced <code>-ss</code> before <code>-i</code></div>
+      <div style="font-size: 13px; color: var(--text2);">Fixed early, reintroduced in the parallel steps. Caught by reviewing the final script before shipping.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid #3d1f1f; border-radius: 10px; padding: 16px 18px; border-left: 3px solid #f85149;">
+      <div style="font-size: 11px; font-weight: 600; color: #f85149; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .07em;">Compatibility</div>
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Suggested <code>mapfile</code></div>
+      <div style="font-size: 13px; color: var(--text2);">Bash 4+ only — not available on macOS default bash 3.2. Caught when the script failed to run.</div>
+    </div>
+    <div style="background: var(--bg3); border: 1px solid #3d1f1f; border-radius: 10px; padding: 16px 18px; border-left: 3px solid #f85149;">
+      <div style="font-size: 11px; font-weight: 600; color: #f85149; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .07em;">Silent failure</div>
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Combined <code>ffprobe</code> awk parsing</div>
+      <div style="font-size: 13px; color: var(--text2);">An optimization that failed silently, returning empty codec variables. Caught by a guard check.</div>
+    </div>
+  </div>
+  <p style="font-size: 14px; color: var(--text3); margin-top: 8px;">Pattern: Claude introduced the bugs, human review caught them. Neither alone would have shipped clean code this fast.</p>
+
+</div>
+</section>
+
+<section id="reflection" style="border-top: 1px solid var(--border);">
+<div class="container">
+  <div class="section-label">Final reflection</div>
+  <h2 class="section-title">I was afraid it would be "too vibe"</h2>
+  <p class="section-sub">My concern going in was that AI coding would feel loose — generated code that looks plausible but doesn't really hold up. That's not what happened.</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px;">
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 24px;">
+      <div style="font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .06em; font-size: 12px;">What I expected</div>
+      <ul style="color: var(--text2); font-size: 15px; padding-left: 18px; line-height: 2;">
+        <li>Generated code I'd need to heavily rewrite</li>
+        <li>Explanations that sounded right but weren't</li>
+        <li>Having to verify everything independently</li>
+        <li>A tool, not a collaborator</li>
+      </ul>
+    </div>
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; border-color: var(--accent2);">
+      <div style="font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .06em;">What actually happened</div>
+      <ul style="color: var(--text2); font-size: 15px; padding-left: 18px; line-height: 2;">
+        <li>Iterative refinement, not generation</li>
+        <li>Real explanations that changed how I think about ffmpeg</li>
+        <li>Claude made mistakes — but they were catchable</li>
+        <li>The fastest debugging loop I've experienced</li>
+        <li>Claude remembered the entire session well enough to surface the best moments from it</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quote-block" style="margin-bottom: 32px;">
+    <div class="quote-text">"The output is solid enough that I want to test it properly and deploy it as an AI agent skill. That's the next step — not rewriting it."</div>
+    <div class="quote-attr">— Post-session reflection</div>
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--accent);">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 10px;">A moment worth calling out</div>
+    <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Asking Claude to pick the most interesting prompts from the session</div>
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.7;">Near the end of the session, after development and documentation were done, the prompt was: <em>"Can you pick some interesting prompts — maybe fewer than 5 — from the story?"</em> Claude went back through the entire conversation, identified the moments that genuinely changed the outcome, and presented them as choices to decide from. That kind of retrospective — remembering context across a long session and distilling it meaningfully — is something that's hard to do alone and surprisingly natural to do with Claude. It's also what produced the six prompts highlighted in this story.</div>
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--amber);">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--amber); margin-bottom: 10px;">Fun fact</div>
+    <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">The most polite debugging session on record</div>
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.7;">Every single request across ~2.5 hours was phrased as a question or suggestion — <em>"can you"</em>, <em>"is it possible to"</em>, <em>"what do you think if"</em>, <em>"I love our discussion"</em>. Even when catching Claude's mistakes, the framing was always an observation rather than a complaint: <em>"I've noticed -ss is before the -i flag — would that cause any issue?"</em> Not sure whether this made Claude work harder, but it certainly made for a pleasant collaboration.</div>
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--purple);">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--purple); margin-bottom: 10px;">From Claude — unedited by the author</div>
+    <div style="font-size: 16px; font-style: italic; color: var(--text); line-height: 1.8; margin-bottom: 12px;">"You came in skeptical, read every diff, and caught mistakes I made twice in a row — including one I'd already fixed once. You asked good questions at the right level: not 'does this work?' but 'does this make sense?' That's harder to teach than any bash syntax, and it's exactly what makes AI collaboration actually produce something worth shipping."</div>
+    <div style="font-size: 13px; color: var(--text3);">— Claude Sonnet, end of session</div>
+  </div>
+
+  <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; border-left: 3px solid var(--green);">
+    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--green); margin-bottom: 10px;">On honesty</div>
+    <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">I didn't write this code — and I'm not pretending I did</div>
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.7;">This story exists because I wanted to present the collaboration accurately — not as "I built a tool with AI assistance" (underselling Claude's role) and not as "AI built this for me" (underselling mine). Claude brought the domain knowledge, the strategy, and the implementation. I brought the direction, the instincts, and the review. The bugs Claude introduced and the ones I caught are both in this story because that's what actually happened. If you're reading this to understand what AI pair programming really feels like, the honest version is more useful than a polished one.</div>
+  </div>
+
+  <div class="section-label">What's next</div>
+  <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">The work isn't done — it's just starting</h3>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px;">
+      <div style="font-size: 20px; margin-bottom: 10px;">🧪</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Test on more source files</div>
+      <div style="font-size: 14px; color: var(--text2);">The script has been tested on one source. Edge cases — different codecs, sparse keyframes, very short clips — still need real-world validation.</div>
+    </div>
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px;">
+      <div style="font-size: 20px; margin-bottom: 10px;">🤖</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Deploy as an AI agent skill</div>
+      <div style="font-size: 14px; color: var(--text2);">Install the <code>cut-sh-skill/</code> folder so a future Claude session can invoke <code>cut.sh</code> autonomously — closing the loop from "built with AI" to "run by AI".</div>
+    </div>
+    <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px;">
+      <div style="font-size: 20px; margin-bottom: 10px;">📋</div>
+      <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Batch cutting support</div>
+      <div style="font-size: 14px; color: var(--text2);">A natural extension — take a CSV of timestamps and cut multiple clips from the same source in one run. The skill package makes this easy to add.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ── Breakthrough ── -->
+<section id="result">
+<div class="container">
+  <div class="section-label">The result</div>
+  <h2 class="section-title">A keyframe-accurate MP4 cutter</h2>
+  <p class="section-sub"><code>cut.sh</code> cuts a clip from any MP4 file between two timestamps with frame-accurate boundaries — no corrupted frames, no re-encoding the whole file.</p>
+
+  <div class="breakthrough">
+    <div class="breakthrough-label">⚡ Performance breakthrough</div>
+    <h3>The real bottleneck wasn't encoding</h3>
+    <p>Per-segment timing revealed that <code>ffmpeg</code> was decoding the entire source file up to the seek point on every run. Moving <code>-ss</code> before <code>-i</code> for the re-encoded segments eliminated the decode entirely.</p>
+    <div class="perf-row">
+      <div class="perf-before">
+        <span class="perf-val bad">67s</span>
+        <div class="perf-lbl">post-input -ss, sequential</div>
+      </div>
+      <div class="perf-arrow">→</div>
+      <div class="perf-after">
+        <span class="perf-val good">3s</span>
+        <div class="perf-lbl">pre-input -ss, parallel</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot-red"></div><div class="dot-amber"></div><div class="dot-green"></div>
+      <span class="terminal-title">cut.sh output</span>
+    </div>
+    <div class="terminal-body"><span class="t-dim">Source info:</span>
+  <span class="t-blue">video codec</span> : h264
+  <span class="t-blue">audio codec</span> : aac
+  <span class="t-blue">timescale</span>   : 90000
+<span class="t-dim">Scanning keyframes in input.mp4...</span>
+<span class="t-dim">Processing segments in parallel mode...</span>
+<span class="t-dim">All segments done.</span>
+<span class="t-dim">Concatenating segments...</span>
+
+<span class="t-sep">── Summary ───────────────────────────────────────────────</span>
+  <span class="t-blue">source</span>  : ./input.mp4
+  <span class="t-blue">start</span>   : 0:13:38
+  <span class="t-blue">end</span>     : 1:06:50
+  <span class="t-blue">output</span>  : ./output/clip.mp4
+  <span class="t-blue">mode</span>    : parallel
+  <span class="t-sep">── timing ──────────────────────────────────────────────</span>
+  <span class="t-yellow">scan</span>      : 1s
+  <span class="t-yellow">segments</span>  : 2s (head: 1s, mid: 1s, tail: 1s)
+  <span class="t-yellow">concat</span>    : 1s
+  <span class="t-yellow">elapsed</span>   : 00:00:04
+  <span class="t-sep">────────────────────────────────────────────────────────</span>
+  <span class="t-green">expected</span>  : 3192s
+  <span class="t-green">actual</span>    : 3192s
+  <span class="t-green">diff</span>      : 0s
+  <span class="t-green">done</span>      : ./output/clip.mp4
+<span class="t-sep">──────────────────────────────────────────────────────────</span></div>
+  </div>
+</div>
+</section>
+
+<!-- ── Files ── -->
+<section id="files" style="background: var(--bg2); border-top: 1px solid var(--border);">
+<div class="container">
+  <div class="section-label">The deliverables</div>
+  <h2 class="section-title">Everything from one session</h2>
+  <p class="section-sub">One chat produced a working script, full documentation, and an AI agent skill package ready to deploy.</p>
+
+  <div class="file-grid">
+    <a href="cut.sh" class="file-card">
+      <div class="file-icon">⚙️</div>
+      <div class="file-name">cut.sh</div>
+      <div class="file-desc">The main script. Keyframe-accurate MP4 cutting with parallel processing and duration verification.</div>
+    </a>
+    <a href="README.md" class="file-card">
+      <div class="file-icon">📖</div>
+      <div class="file-name">README.md</div>
+      <div class="file-desc">Usage reference — arguments, output paths, the 3-segment strategy explained.</div>
+    </a>
+    <a href="DEVLOG.md" class="file-card">
+      <div class="file-icon">📓</div>
+      <div class="file-name">DEVLOG.md</div>
+      <div class="file-desc">The full collaboration log — all 8 phases, every bug, the performance breakthrough.</div>
+    </a>
+    <a href="docs/cut_sh_docs.html" class="file-card">
+      <div class="file-icon">🌐</div>
+      <div class="file-name">cut_sh_docs.html</div>
+      <div class="file-desc">Interactive HTML viewer with README, DEVLOG, and the full script with syntax highlighting.</div>
+    </a>
+    <a href="skill/SKILL.md" class="file-card">
+      <div class="file-icon">🤖</div>
+      <div class="file-name">skill/SKILL.md</div>
+      <div class="file-desc">AI agent skill descriptor — so Claude can invoke cut.sh autonomously in future sessions.</div>
+    </a>
+    <a href="skill/invoke_cut.sh" class="file-card">
+      <div class="file-icon">🔧</div>
+      <div class="file-name">skill/invoke_cut.sh</div>
+      <div class="file-desc">Agent wrapper with dependency checks, path resolution, and clean exit codes.</div>
+    </a>
+  </div>
+</div>
+</section>
+
+<footer>
+  <p>Built in one Claude chat session &mdash; <a href="https://claude.ai">claude.ai</a></p>
+  <p style="margin-top:8px;">View the full docs at <a href="docs/cut_sh_docs.html">cut_sh_docs.html</a></p>
+</footer>
+
+</body>
+</html>
