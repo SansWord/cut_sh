@@ -183,27 +183,37 @@ fi
 TIME_SCAN_END=$(date +%s)
 
 # ── Steps 1-3: Process all segments ───────────────────────────
+
+SKIP_HEAD=$(echo "$kf_after_start" | awk '{print ($1 == 0) ? "true" : "false"}')
+KF_MID_START=$([[ "$SKIP_HEAD" == true ]] && echo "0" || echo "$kf_after_start")
+
+SKIP_MID=$(echo "$kf_before_end $KF_MID_START" | awk '{print ($1 <= $2) ? "true" : "false"}')
+
 head_duration=$(echo "$kf_after_start - $start_sec" | bc | awk '{printf "%.6f", $1}')
-mid_duration=$(echo "$kf_before_end - $kf_after_start" | bc | awk '{printf "%.6f", $1}')
+mid_duration=$(echo "$kf_before_end - $KF_MID_START" | bc | awk '{printf "%.6f", $1}')
 tail_duration=$(echo "$end_sec - $kf_before_end" | bc | awk '{printf "%.6f", $1}')
 
 TIME_SEGMENTS_START=$(date +%s)
 echo "Processing segments in $([ "$PARALLEL" == true ] && echo "parallel" || echo "sequential") mode..."
 
 if [[ "$PARALLEL" == true ]]; then
-  TIME_HEAD_START=$(date +%s)
-  ffmpeg -v error -ss "$START" -i "$SOURCE" -t "$head_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_HEAD" && \
-    echo "$(( $(date +%s) - TIME_HEAD_START ))" > /tmp/cut_time_head &
-  PID_HEAD=$!
+  if [[ "$SKIP_HEAD" == false ]]; then
+    TIME_HEAD_START=$(date +%s)
+    ffmpeg -v error -ss "$START" -i "$SOURCE" -t "$head_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_HEAD" && \
+      echo "$(( $(date +%s) - TIME_HEAD_START ))" > /tmp/cut_time_head &
+    PID_HEAD=$!
+  fi
 
-  TIME_MID_START=$(date +%s)
-  ffmpeg -v error -i "$SOURCE" -ss "$kf_after_start" -t "$mid_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c copy -y "$TMP_MID" && \
-    echo "$(( $(date +%s) - TIME_MID_START ))" > /tmp/cut_time_mid &
-  PID_MID=$!
+  if [[ "$SKIP_MID" == false ]]; then
+    TIME_MID_START=$(date +%s)
+    ffmpeg -v error -i "$SOURCE" -ss "$KF_MID_START" -t "$mid_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c copy -y "$TMP_MID" && \
+      echo "$(( $(date +%s) - TIME_MID_START ))" > /tmp/cut_time_mid &
+    PID_MID=$!
+  fi
 
   TIME_TAIL_START=$(date +%s)
   ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
@@ -212,27 +222,35 @@ if [[ "$PARALLEL" == true ]]; then
     echo "$(( $(date +%s) - TIME_TAIL_START ))" > /tmp/cut_time_tail &
   PID_TAIL=$!
 
-  wait $PID_HEAD || { echo "Error: head segment failed." >&2; exit 1; }
-  wait $PID_MID  || { echo "Error: mid segment failed." >&2; exit 1; }
+  [[ "$SKIP_HEAD" == false ]] && { wait $PID_HEAD || { echo "Error: head segment failed." >&2; exit 1; }; }
+  [[ "$SKIP_MID" == false ]] && { wait $PID_MID || { echo "Error: mid segment failed." >&2; exit 1; }; }
   wait $PID_TAIL || { echo "Error: tail segment failed." >&2; exit 1; }
 
-  ELAPSED_HEAD=$(cat /tmp/cut_time_head 2>/dev/null || echo "N/A")
-  ELAPSED_MID=$(cat /tmp/cut_time_mid 2>/dev/null || echo "N/A")
+  ELAPSED_HEAD=$([[ "$SKIP_HEAD" == true ]] && echo "skipped" || cat /tmp/cut_time_head 2>/dev/null || echo "N/A")
+  ELAPSED_MID=$([[ "$SKIP_MID" == true ]] && echo "skipped" || cat /tmp/cut_time_mid 2>/dev/null || echo "N/A")
   ELAPSED_TAIL=$(cat /tmp/cut_time_tail 2>/dev/null || echo "N/A")
 else
-  TIME_HEAD_START=$(date +%s)
-  ffmpeg -v error -ss "$START" -i "$SOURCE" -t "$head_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_HEAD" \
-    || { echo "Error: head segment failed." >&2; exit 1; }
-  ELAPSED_HEAD=$(( $(date +%s) - TIME_HEAD_START ))
+  if [[ "$SKIP_HEAD" == false ]]; then
+    TIME_HEAD_START=$(date +%s)
+    ffmpeg -v error -ss "$START" -i "$SOURCE" -t "$head_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_HEAD" \
+      || { echo "Error: head segment failed." >&2; exit 1; }
+    ELAPSED_HEAD=$(( $(date +%s) - TIME_HEAD_START ))
+  else
+    ELAPSED_HEAD="skipped"
+  fi
 
-  TIME_MID_START=$(date +%s)
-  ffmpeg -v error -i "$SOURCE" -ss "$kf_after_start" -t "$mid_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c copy -y "$TMP_MID" \
-    || { echo "Error: mid segment failed." >&2; exit 1; }
-  ELAPSED_MID=$(( $(date +%s) - TIME_MID_START ))
+  if [[ "$SKIP_MID" == false ]]; then
+    TIME_MID_START=$(date +%s)
+    ffmpeg -v error -i "$SOURCE" -ss "$KF_MID_START" -t "$mid_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c copy -y "$TMP_MID" \
+      || { echo "Error: mid segment failed." >&2; exit 1; }
+    ELAPSED_MID=$(( $(date +%s) - TIME_MID_START ))
+  else
+    ELAPSED_MID="skipped"
+  fi
 
   TIME_TAIL_START=$(date +%s)
   ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
@@ -246,9 +264,21 @@ TIME_SEGMENTS_END=$(date +%s)
 
 # ── Step 4: Concat all three ───────────────────────────────────
 TIME_CONCAT_START=$(date +%s)
-echo "Concatenating segments..."
-printf "file '%s'\nfile '%s'\nfile '%s'\n" \
-  "$TMP_HEAD" "$TMP_MID" "$TMP_TAIL" > "$TMP_LIST"
+CONCAT_SEGMENTS=""
+[[ "$SKIP_HEAD" == false ]] && CONCAT_SEGMENTS="head"
+[[ "$SKIP_MID"  == false ]] && CONCAT_SEGMENTS="${CONCAT_SEGMENTS:+$CONCAT_SEGMENTS, }mid"
+CONCAT_SEGMENTS="${CONCAT_SEGMENTS:+$CONCAT_SEGMENTS, }tail"
+echo "Concatenating segments: $CONCAT_SEGMENTS..."
+
+if [[ "$SKIP_HEAD" == true && "$SKIP_MID" == true ]]; then
+  printf "file '%s'\n" "$TMP_TAIL" > "$TMP_LIST"
+elif [[ "$SKIP_HEAD" == true ]]; then
+  printf "file '%s'\nfile '%s'\n" "$TMP_MID" "$TMP_TAIL" > "$TMP_LIST"
+elif [[ "$SKIP_MID" == true ]]; then
+  printf "file '%s'\nfile '%s'\n" "$TMP_HEAD" "$TMP_TAIL" > "$TMP_LIST"
+else
+  printf "file '%s'\nfile '%s'\nfile '%s'\n" "$TMP_HEAD" "$TMP_MID" "$TMP_TAIL" > "$TMP_LIST"
+fi
 
 ffmpeg -v error -f concat -safe 0 -i "$TMP_LIST" \
   -c copy \
