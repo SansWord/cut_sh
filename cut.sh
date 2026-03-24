@@ -60,6 +60,7 @@ mkdir -p ./output
 if [[ -n "$OUTPUT_ARG" ]]; then
   if [[ "$OUTPUT_ARG" == */* ]]; then
     OUTPUT="$OUTPUT_ARG"
+    mkdir -p "$(dirname "$OUTPUT")"
   else
     OUTPUT="./output/$OUTPUT_ARG"
   fi
