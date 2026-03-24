@@ -187,8 +187,8 @@ TIME_SCAN_END=$(date +%s)
 
 SKIP_HEAD=$(echo "$kf_after_start" | awk '{print ($1 == 0) ? "true" : "false"}')
 KF_MID_START=$([[ "$SKIP_HEAD" == true ]] && echo "0" || echo "$kf_after_start")
-
 SKIP_MID=$(echo "$kf_before_end $KF_MID_START" | awk '{print ($1 <= $2) ? "true" : "false"}')
+SKIP_TAIL=$(echo "$end_sec $kf_before_end" | awk '{print ($1 == $2) ? "true" : "false"}')
 
 head_duration=$(echo "$kf_after_start - $start_sec" | bc | awk '{printf "%.6f", $1}')
 mid_duration=$(echo "$kf_before_end - $KF_MID_START" | bc | awk '{printf "%.6f", $1}')
@@ -216,20 +216,23 @@ if [[ "$PARALLEL" == true ]]; then
     PID_MID=$!
   fi
 
-  TIME_TAIL_START=$(date +%s)
-  ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_TAIL" && \
-    echo "$(( $(date +%s) - TIME_TAIL_START ))" > /tmp/cut_time_tail &
-  PID_TAIL=$!
+  if [[ "$SKIP_TAIL" == false ]]; then
+    TIME_TAIL_START=$(date +%s)
+    ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_TAIL" && \
+      echo "$(( $(date +%s) - TIME_TAIL_START ))" > /tmp/cut_time_tail &
+    PID_TAIL=$!
+  fi
 
   [[ "$SKIP_HEAD" == false ]] && { wait $PID_HEAD || { echo "Error: head segment failed." >&2; exit 1; }; }
   [[ "$SKIP_MID" == false ]] && { wait $PID_MID || { echo "Error: mid segment failed." >&2; exit 1; }; }
-  wait $PID_TAIL || { echo "Error: tail segment failed." >&2; exit 1; }
+  [[ "$SKIP_TAIL" == false ]] && { wait $PID_TAIL || { echo "Error: tail segment failed." >&2; exit 1; }; }
+
 
   ELAPSED_HEAD=$([[ "$SKIP_HEAD" == true ]] && echo "skipped" || cat /tmp/cut_time_head 2>/dev/null || echo "N/A")
   ELAPSED_MID=$([[ "$SKIP_MID" == true ]] && echo "skipped" || cat /tmp/cut_time_mid 2>/dev/null || echo "N/A")
-  ELAPSED_TAIL=$(cat /tmp/cut_time_tail 2>/dev/null || echo "N/A")
+  ELAPSED_TAIL=$([[ "$SKIP_TAIL" == true ]] && echo "skipped" || cat /tmp/cut_time_tail 2>/dev/null || echo "N/A")
 else
   if [[ "$SKIP_HEAD" == false ]]; then
     TIME_HEAD_START=$(date +%s)
@@ -253,12 +256,17 @@ else
     ELAPSED_MID="skipped"
   fi
 
-  TIME_TAIL_START=$(date +%s)
-  ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
-    -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
-    -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_TAIL" \
-    || { echo "Error: tail segment failed." >&2; exit 1; }
-  ELAPSED_TAIL=$(( $(date +%s) - TIME_TAIL_START ))
+  if [[ "$SKIP_TAIL" == false ]]; then
+    TIME_TAIL_START=$(date +%s)
+    ffmpeg -v error -ss "$kf_before_end" -i "$SOURCE" -t "$tail_duration" \
+      -reset_timestamps 1 -video_track_timescale "$TIMESCALE" \
+      -c:v "$VIDEO_CODEC" -c:a "$AUDIO_CODEC" -y "$TMP_TAIL" \
+      || { echo "Error: tail segment failed." >&2; exit 1; }
+    ELAPSED_TAIL=$(( $(date +%s) - TIME_TAIL_START ))
+  else
+    ELAPSED_TAIL="skipped"
+  fi
+
 fi
 echo "All segments done."
 TIME_SEGMENTS_END=$(date +%s)
@@ -268,18 +276,15 @@ TIME_CONCAT_START=$(date +%s)
 CONCAT_SEGMENTS=""
 [[ "$SKIP_HEAD" == false ]] && CONCAT_SEGMENTS="head"
 [[ "$SKIP_MID"  == false ]] && CONCAT_SEGMENTS="${CONCAT_SEGMENTS:+$CONCAT_SEGMENTS, }mid"
-CONCAT_SEGMENTS="${CONCAT_SEGMENTS:+$CONCAT_SEGMENTS, }tail"
+[[ "$SKIP_TAIL" == false ]] && CONCAT_SEGMENTS="${CONCAT_SEGMENTS:+$CONCAT_SEGMENTS, }tail"
+
 echo "Concatenating segments: $CONCAT_SEGMENTS..."
 
-if [[ "$SKIP_HEAD" == true && "$SKIP_MID" == true ]]; then
-  printf "file '%s'\n" "$TMP_TAIL" > "$TMP_LIST"
-elif [[ "$SKIP_HEAD" == true ]]; then
-  printf "file '%s'\nfile '%s'\n" "$TMP_MID" "$TMP_TAIL" > "$TMP_LIST"
-elif [[ "$SKIP_MID" == true ]]; then
-  printf "file '%s'\nfile '%s'\n" "$TMP_HEAD" "$TMP_TAIL" > "$TMP_LIST"
-else
-  printf "file '%s'\nfile '%s'\nfile '%s'\n" "$TMP_HEAD" "$TMP_MID" "$TMP_TAIL" > "$TMP_LIST"
-fi
+{
+  [[ "$SKIP_HEAD" == false ]] && printf "file '%s'\n" "$TMP_HEAD"
+  [[ "$SKIP_MID"  == false ]] && printf "file '%s'\n" "$TMP_MID"
+  [[ "$SKIP_TAIL" == false ]] && printf "file '%s'\n" "$TMP_TAIL"
+} > "$TMP_LIST"
 
 ffmpeg -v error -f concat -safe 0 -i "$TMP_LIST" \
   -c copy \
