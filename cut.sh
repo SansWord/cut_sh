@@ -117,6 +117,18 @@ AUDIO_CODEC=$(ffprobe -v error -select_streams a:0 \
   -of default=noprint_wrappers=1:nokey=1 \
   "$SOURCE")
 
+# ── Map decode codec names to encode codec names ─────────────
+[[ "$VIDEO_CODEC" == "h264" ]]  && VIDEO_CODEC="libx264"
+[[ "$VIDEO_CODEC" == "hevc" ]]  && VIDEO_CODEC="libx265"
+[[ "$VIDEO_CODEC" == "vp8"  ]]  && VIDEO_CODEC="libvpx"
+[[ "$VIDEO_CODEC" == "vp9"  ]]  && VIDEO_CODEC="libvpx-vp9"
+[[ "$VIDEO_CODEC" == "av1"  ]]  && VIDEO_CODEC="libaom-av1"
+[[ "$AUDIO_CODEC" == "aac"  ]]  && AUDIO_CODEC="aac"
+[[ "$AUDIO_CODEC" == "opus" ]]  && AUDIO_CODEC="libopus"
+[[ "$AUDIO_CODEC" == "mp3"  ]]  && AUDIO_CODEC="libmp3lame"
+[[ "$AUDIO_CODEC" == "vorbis" ]] && AUDIO_CODEC="libvorbis"
+[[ "$AUDIO_CODEC" == "flac" ]]  && AUDIO_CODEC="flac"
+
 TIMESCALE=$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=time_base \
   -of default=noprint_wrappers=1:nokey=1 \
@@ -171,9 +183,9 @@ fi
 TIME_SCAN_END=$(date +%s)
 
 # ── Steps 1-3: Process all segments ───────────────────────────
-head_duration=$(echo "$kf_after_start - $start_sec" | bc)
-mid_duration=$(echo "$kf_before_end - $kf_after_start" | bc)
-tail_duration=$(echo "$end_sec - $kf_before_end" | bc)
+head_duration=$(echo "$kf_after_start - $start_sec" | bc | awk '{printf "%.6f", $1}')
+mid_duration=$(echo "$kf_before_end - $kf_after_start" | bc | awk '{printf "%.6f", $1}')
+tail_duration=$(echo "$end_sec - $kf_before_end" | bc | awk '{printf "%.6f", $1}')
 
 TIME_SEGMENTS_START=$(date +%s)
 echo "Processing segments in $([ "$PARALLEL" == true ] && echo "parallel" || echo "sequential") mode..."
